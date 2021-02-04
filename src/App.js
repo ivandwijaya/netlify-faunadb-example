@@ -3,10 +3,8 @@ import ContentEditable from './components/ContentEditable'
 import AppHeader from './components/AppHeader'
 import SettingsMenu from './components/SettingsMenu'
 import SettingsIcon from './components/SettingsIcon'
-import analytics from './utils/analytics'
 import api from './utils/api'
 import sortByDate from './utils/sortByDate'
-import isLocalHost from './utils/isLocalHost'
 import './App.css'
 
 export default class App extends Component {
@@ -16,17 +14,10 @@ export default class App extends Component {
   }
   componentDidMount() {
 
-    /* Track a page view */
-    analytics.page()
-
     // Fetch all todos
     api.readAll().then((todos) => {
       if (todos.message === 'unauthorized') {
-        if (isLocalHost()) {
-          alert('FaunaDB key is not unauthorized. Make sure you set it in terminal session where you ran `npm start`. Visit http://bit.ly/set-fauna-key for more info')
-        } else {
-          alert('FaunaDB key is not unauthorized. Verify the key `FAUNADB_SERVER_SECRET` set in Netlify enviroment variables is correct')
-        }
+        alert('Unauthorized')
         return false
       }
 
@@ -68,11 +59,6 @@ export default class App extends Component {
     // Make API request to create new todo
     api.create(todoInfo).then((response) => {
       console.log(response)
-      /* Track a custom event */
-      analytics.track('todoCreated', {
-        category: 'todos',
-        label: todoValue,
-      })
       // remove temporaryValue from state and persist API response
       const persistedState = removeOptimisticTodo(todos).concat(response)
       // Set persisted value to state
@@ -115,9 +101,6 @@ export default class App extends Component {
     // Make API request to delete todo
     api.delete(todoId).then(() => {
       console.log(`deleted todo id ${todoId}`)
-      analytics.track('todoDeleted', {
-        category: 'todos',
-      })
     }).catch((e) => {
       console.log(`There was an error removing ${todoId}`, e)
       // Add item removed back to list
@@ -148,10 +131,6 @@ export default class App extends Component {
         completed: todoCompleted
       }).then(() => {
         console.log(`update todo ${todoId}`, todoCompleted)
-        const eventName = (todoCompleted) ? 'todoCompleted' : 'todoUnfinished'
-        analytics.track(eventName, {
-          category: 'todos'
-        })
       }).catch((e) => {
         console.log('An API error occurred', e)
       })
@@ -179,10 +158,6 @@ export default class App extends Component {
           title: currentValue
         }).then(() => {
           console.log(`update todo ${todoId}`, currentValue)
-          analytics.track('todoUpdated', {
-            category: 'todos',
-            label: currentValue
-          })
         }).catch((e) => {
           console.log('An API error occurred', e)
         })
@@ -223,9 +198,6 @@ export default class App extends Component {
 
       api.batchDelete(data.completedTodoIds).then(() => {
         console.log(`Batch removal complete`, data.completedTodoIds)
-        analytics.track('todosBatchDeleted', {
-          category: 'todos',
-        })
       }).catch((e) => {
         console.log('An API error occurred', e)
       })
@@ -235,16 +207,10 @@ export default class App extends Component {
     this.setState({
       showMenu: false
     })
-    analytics.track('modalClosed', {
-      category: 'modal'
-    })
   }
   openModal = () => {
     this.setState({
       showMenu: true
-    })
-    analytics.track('modalOpened', {
-      category: 'modal'
     })
   }
   renderTodos() {
